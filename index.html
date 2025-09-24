@@ -39,16 +39,27 @@
   }
 
   /* Marca / títulos */
-  .logo{width:168px; height:168px; filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));}
+  .logo{width:168px; height:168px; filter: drop-shadow(0 18px 34px rgba(0,0,0,.55)); animation: logo-float 6s ease-in-out infinite;}
+  @keyframes logo-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
   .title{
     margin:0; font-weight:1000; font-size:clamp(2.1rem, 9vw, 3.2rem);
     letter-spacing:.4px; line-height:1.02;
-    background: linear-gradient(180deg, #ec4899, #8b5cf6);
+    background: linear-gradient(90deg, #d9f99d, #a3e635, #d9f99d);
+    background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    text-shadow: 0 6px 18px rgba(139, 92, 246, .18);
+    text-shadow: 0 2px 32px rgba(163, 230, 53, .4);
+    animation: text-shine 5s linear infinite;
+  }
+  @keyframes text-shine {
+    to {
+      background-position: 200% center;
+    }
   }
   .subtitle{
-    margin:6px 0 24px; color:#cbd5e1;
+    margin:24px 0 24px; color:#cbd5e1;
     font-size:clamp(1rem, 3.8vw, 1.25rem); text-align:center; max-width:720px;
   }
 
@@ -59,8 +70,8 @@
     border:2px solid currentColor;
   }
   .btn.big{height:66px; font-size:20px; padding:0 28px;}
-  .btn.blue{color:#60a5fa;}
-  .btn.blue:active{background:rgba(96,165,250,.12);}
+  .btn.blue{color:#a3e635;}
+  .btn.blue:active{background:rgba(163, 230, 53, .15);}
   .btn.green{color:var(--green);}
   .btn.green:disabled{opacity:.45; cursor:not-allowed;}
   .btn.green:not(:disabled):active{background:rgba(22,163,74,.15);}
@@ -117,8 +128,12 @@
   /* Footer de marca */
   .brand-footer{
     position:fixed; left:0; right:0; bottom:8px;
-    text-align:center; font-weight:900; letter-spacing:.2px;
+    text-align:center; font-weight:400; letter-spacing:.2px;
     color:#cbd5e1; opacity:.7; pointer-events:none; user-select:none; font-size:14px;
+  }
+  
+  .brand-footer strong {
+    font-weight:900;
   }
 
   /* Fin */
@@ -178,7 +193,7 @@
   </div>
 </section>
 
-<footer class="brand-footer">BottleQuiz</footer>
+<footer class="brand-footer"><strong>BottleQuiz</strong> by @cnavast</footer>
 
 <script>
 (() => {
@@ -254,7 +269,7 @@
   const wrapEl     = document.getElementById('wrap');
 
   // Generate logos
-  startLogoContainer.innerHTML = bottleSVG(PALETTE[3], { idx: 'logo_start' });
+  startLogoContainer.innerHTML = bottleSVG(PALETTE[6], { idx: 'logo_start' });
   endLogoContainer.innerHTML = bottleSVG(PALETTE[2], { idx: 'logo_end' });
 
   // Apply texts
