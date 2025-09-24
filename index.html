@@ -97,7 +97,7 @@
   .drop-highlight{outline:3px solid rgba(96,165,250,.8); border-radius:16px}
   .bot-svg{width:100%; height:100%; display:block; filter: drop-shadow(0 14px 22px rgba(0,0,0,.5));}
   .bot-glass{fill:url(#glassGrad); stroke:#ffffff; stroke-opacity:.28; stroke-width:1.4}
-  .bot-ask{font-weight:900; font-size:46px; fill:#94a3b8; paint-order:stroke; stroke:#000; stroke-width:6; stroke-opacity:.22}
+  .bot-ask{font-weight:900; fill:#94a3b8; paint-order:stroke; stroke:#000; stroke-width:6; stroke-opacity:1}
   .drag-proxy{position:fixed; z-index:9999; width:var(--bsize); height:var(--bsize); pointer-events:none; transform:translate(-50%,-50%) scale(1.04)}
 
   /* Aciertos grande */
@@ -291,25 +291,124 @@
   window.addEventListener('orientationchange', ()=> setTimeout(applyLayout, 200));
 
   /* ===== Botellas (SVG) ===== */
-  function defsGlass(){return `<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0.22"/><stop offset="55%" stop-color="#dbeafe" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>`;}
-  function bottleSVG(fill,{gray=false,ask=false}={}){ const liquid = gray ? '#9aa3ad' : fill; return `
-    <svg class="bot-svg" viewBox="0 0 100 100" aria-hidden="true">
-      ${defsGlass()}
-      <path class="bot-glass" d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z"/>
-      <clipPath id="clipBottle"><path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z"/></clipPath>
-      <g clip-path="url(#clipBottle)">
-        <rect x="20" y="32" width="60" height="60" rx="10" fill="${liquid}"/>
-        <ellipse cx="50" cy="32" rx="22" ry="3" fill="rgba(255,255,255,.18)"/>
+  // Función para generar tonos más claros/oscuros de un color
+  function generateColorShades(hex) {
+    const p = (c, amt) => {
+      let usePound = false;
+      if (c[0] === "#") { c = c.slice(1); usePound = true; }
+      const num = parseInt(c, 16);
+      let r = (num >> 16) + amt;
+      if (r > 255) r = 255; else if (r < 0) r = 0;
+      let g = ((num >> 8) & 0x00FF) + amt;
+      if (g > 255) g = 255; else if (g < 0) g = 0;
+      let b = (num & 0x0000FF) + amt;
+      if (b > 255) b = 255; else if (b < 0) b = 0;
+      return (usePound ? "#" : "") + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+    };
+    return {
+      main: hex,
+      darkest: p(hex, -40),
+      dark: p(hex, -20),
+      light: p(hex, 20),
+      lightest: p(hex, 60)
+    };
+  }
+
+  function bottleSVG(fill, {gray=false, ask=false, idx=0}={}){
+    const shades = gray ? { main: '#9aa3ad', darkest: '#6b7280', dark: '#86919c', light: '#aab3be', lightest: '#c5cdd6' } : generateColorShades(fill);
+    const gradId = (base) => `${base}_${idx}`; // IDs únicos por botella para evitar conflictos
+
+    return `
+    <svg class="bot-svg" viewBox="0 0 600 600" aria-hidden="true" xml:space="preserve">
+      <g id="objects_${idx}">
+        <g>
+          <g>
+            <linearGradient id="SVGID_1_${idx}" gradientUnits="userSpaceOnUse" x1="138.5436" y1="337.7342" x2="461.4565" y2="337.7342">
+              <stop offset="0" style="stop-color:#4d4d4d"/>
+              <stop offset="0.9988" style="stop-color:#454545"/>
+            </linearGradient>
+            <path style="fill:url(#SVGID_1_${idx});" d="M461.456,389.148c0,88.653-71.449,160.617-159.906,161.449 c-89.091,0.838-163.008-72.356-163.007-161.451c0.001-65.856,39.432-122.506,95.976-147.618 c11.357-5.044,18.577-16.42,18.577-28.847v-87.817h93.807v87.819c0,12.445,7.253,23.811,18.625,28.866 C422.047,266.673,461.456,323.31,461.456,389.148z"/>
+            <circle style="fill:#666666;" cx="274.246" cy="197.975" r="10.896"/>
+            <path style="fill:#666666;" d="M275.216,223.046c-5.142-1.274-10.432,1.507-12.264,6.478 c-3.724,10.104-11.162,19.19-20.521,22.74c-17.156,6.507-31.132,15.841-39.607,22.304c-4.731,3.608-4.834,10.688-0.188,14.404h0 c3.411,2.729,8.269,2.662,11.601-0.162c6.941-5.883,20.075-15.457,37.108-20.698c15.92-4.899,26.425-17.706,31.249-31.633 C284.588,230.727,281.126,224.511,275.216,223.046L275.216,223.046z"/>
+            
+            <linearGradient id="${gradId('SVGID_00000041268535452084548570000003881654123983600008')}" gradientUnits="userSpaceOnUse" x1="323.0786" y1="395.1245" x2="187.4762" y2="364.4055">
+              <stop offset="0" style="stop-color:${shades.dark}"/>
+              <stop offset="0.9976" style="stop-color:${shades.main}"/>
+            </linearGradient>
+            <path style="fill:url(#${gradId('SVGID_00000041268535452084548570000003881654123983600008')});" d="M330.796,374.726 C314,396,289.612,414.266,253.445,415c-67.048,1.361-92.071-39.526-93.11-58.576c-0.081-1.491-0.64-2.911-0.269-4.357l0,0 c0.405-1.579,1.329-2.987,2.653-3.938c12.741-9.151,59.879-27.336,117.47,2.389C300.257,360.874,313.897,376.41,330.796,374.726z"/>
+            
+            <linearGradient id="${gradId('SVGID_00000174603210042648211360000010347777034316514705')}" gradientUnits="userSpaceOnUse" x1="155.3826" y1="431.8055" x2="416.8826" y2="431.8055">
+              <stop offset="0" style="stop-color:${shades.light}"/>
+              <stop offset="0.9976" style="stop-color:${shades.main}"/>
+            </linearGradient>
+            <path style="fill:url(#${gradId('SVGID_00000174603210042648211360000010347777034316514705')});" d="M416.883,389.148 c0,58.54-31.162,109.81-77.796,138.12c-12.778,3.645-26.289,5.567-40.255,5.507c-79.381-0.367-143.449-64.741-143.449-144.122 c0-11.857,1.913-24.628,4.617-35.652c4.646,13.026,24.623,56.949,93.445,56.949c36.174,0,56.034-16.7,77.351-35.223 c0.01,0,0.01-0.01,0.01-0.01c19.405-16.849,40.017-35.223,75.221-43.88C413.039,348.922,416.883,368.584,416.883,389.148z"/>
+            
+            <linearGradient id="${gradId('SVGID_00000129917112938582210110000012673878846641386415')}" gradientUnits="userSpaceOnUse" x1="339.0863" y1="427.4203" x2="443.6269" y2="427.4203">
+              <stop offset="0.0012" style="stop-color:${shades.darkest}"/>
+              <stop offset="0.9976" style="stop-color:${shades.dark}"/>
+            </linearGradient>
+            <path style="fill:url(#${gradId('SVGID_00000129917112938582210110000012673878846641386415')});" d="M443.627,388.652 c0,65.87-44.188,121.419-104.541,138.615c46.634-28.309,77.796-79.579,77.796-138.12c0-20.563-3.843-40.225-10.856-58.313 c5.2-1.278,10.727-2.348,16.611-3.17c4.23-0.594,8.36,1.733,9.994,5.676c0.01,0.03,0.02,0.049,0.03,0.069 C439.724,350.418,443.627,369.079,443.627,388.652z"/>
+            
+            <linearGradient id="SVGID_8_${idx}" gradientUnits="userSpaceOnUse" x1="277.822" y1="337.7331" x2="461.4565" y2="337.7331">
+              <stop offset="0" style="stop-color:#454545"/>
+              <stop offset="0.9988" style="stop-color:#3b3b3b"/>
+            </linearGradient>
+            <path style="fill:url(#SVGID_8_${idx});" d="M461.456,389.148 c0,88.652-71.447,160.614-159.901,161.447c-8.053,0.079-15.977-0.456-23.733-1.535c22.178-3.081,42.92-10.658,61.264-21.792 c60.353-17.196,104.541-72.745,104.541-138.615c0-19.573-3.903-38.234-10.965-55.242c-0.01-0.02-0.02-0.04-0.03-0.069 c-1.634-3.942-5.765-6.27-9.994-5.676c-5.884,0.822-11.411,1.892-16.611,3.17c-15.423-39.829-46.208-72.012-85.067-89.286 c-11.381-5.052-18.632-16.423-18.632-28.864v-87.82h44.574v87.82c0,12.441,7.251,23.812,18.632,28.864 C422.043,266.669,461.456,323.307,461.456,389.148z"/>
+            
+            <linearGradient id="${gradId('SVGID_00000003784933025178543020000015677254428398651820')}" gradientUnits="userSpaceOnUse" x1="180.3883" y1="426.7246" x2="252.9443" y2="515.3716">
+              <stop offset="0" style="stop-color:${shades.lightest}"/>
+              <stop offset="0.9976" style="stop-color:${shades.light}"/>
+            </linearGradient>
+            <path style="fill:url(#${gradId('SVGID_00000003784933025178543020000015677254428398651820')});" d="M236.191,480.732 c-28.107-18.461-40.446-48.207-44.974-62.485c-1.451-4.576-6.136-7.299-10.825-6.267h0c-5.485,1.208-8.642,6.974-6.698,12.244 c6.968,18.89,24.746,59.055,53.825,72.35c4.604,2.105,10.042-0.11,12.009-4.775l0,0 C241.221,487.787,239.83,483.122,236.191,480.732z"/>
+            
+            <linearGradient id="${gradId('SVGID_00000083084080342386673910000004389437495051127725')}" gradientUnits="userSpaceOnUse" x1="225.3076" y1="479.2567" x2="281.4799" y2="517.8752">
+              <stop offset="0" style="stop-color:${shades.lightest}"/>
+              <stop offset="0.9976" style="stop-color:${shades.light}"/>
+            </linearGradient>
+            <circle style="fill:url(#${gradId('SVGID_00000083084080342386673910000004389437495051127725')});" cx="261.369" cy="504.049" r="10.896"/>
+            
+            <linearGradient id="SVGID_12_${idx}" gradientUnits="userSpaceOnUse" x1="235.0566" y1="117.1974" x2="364.9434" y2="117.1974">
+              <stop offset="0" style="stop-color:#454545"/>
+              <stop offset="0.9988" style="stop-color:#3b3b3b"/>
+            </linearGradient>
+            <path style="fill:url(#SVGID_12_${idx});" d="M364.943,95.55v25.707 c0,9.714-29.076,17.589-64.943,17.589s-64.943-7.875-64.943-17.589V95.55H364.943z"/>
+            
+            <linearGradient id="SVGID_13_${idx}" gradientUnits="userSpaceOnUse" x1="235.0566" y1="95.5496" x2="364.9434" y2="95.5496">
+              <stop offset="0" style="stop-color:#4d4d4d"/>
+              <stop offset="0.9988" style="stop-color:#454545"/>
+            </linearGradient>
+            <ellipse style="fill:url(#SVGID_13_${idx});" cx="300" cy="95.55" rx="64.943" ry="17.589"/>
+            
+            <linearGradient id="SVGID_14_${idx}" gradientUnits="userSpaceOnUse" x1="246.799" y1="72.2722" x2="353.201" y2="72.2722">
+              <stop offset="0" style="stop-color:#844D28"/>
+              <stop offset="0.9988" style="stop-color:#63311F"/>
+            </linearGradient>
+            <path style="fill:url(#SVGID_14_${idx});" d="M348.018,50.202 c3.746,2.703,5.69,7.26,5.068,11.837l-3.917,28.851c-0.446,3.239-2.476,6.032-5.418,7.439c-6.518,3.11-20.137,7.716-43.752,7.716 s-37.234-4.606-43.752-7.716c-2.942-1.407-4.972-4.2-5.418-7.439l-3.917-28.851c-0.621-4.577,1.323-9.134,5.068-11.837 C266.291,39.876,283.145,38.5,300,38.5S333.709,39.876,348.018,50.202z"/>
+            
+            <linearGradient id="SVGID_15_${idx}" gradientUnits="userSpaceOnUse" x1="263.3504" y1="52.8628" x2="336.6496" y2="52.8628">
+              <stop offset="0" style="stop-color:#64321F"/>
+              <stop offset="0.9976" style="stop-color:#4A2417"/>
+            </linearGradient>
+            <ellipse style="fill:url(#SVGID_15_${idx});" cx="300" cy="52.863" rx="36.65" ry="8.42"/>
+            
+            <linearGradient id="SVGID_16_${idx}" gradientUnits="userSpaceOnUse" x1="256.0499" y1="78.1482" x2="268.303" y2="78.1482">
+              <stop offset="0.0012" style="stop-color:#AD6535"/>
+              <stop offset="0.9988" style="stop-color:#994C2F"/>
+            </linearGradient>
+            <path style="fill:url(#SVGID_16_${idx});" d="M263.294,91.971L263.294,91.971 c-2.999,0.242-5.627-1.992-5.869-4.991l-1.357-16.784c-0.242-2.999,1.992-5.627,4.991-5.869l0,0 c2.999-0.242,5.627,1.992,5.869,4.991l1.357,16.784C268.527,89.1,266.293,91.728,263.294,91.971z"/>
+          </g>
+        </g>
       </g>
-      ${ask?`<text class="bot-ask" x="50" y="67" text-anchor="middle">?</text>`:''}
-    </svg>`;}
+      ${ask?`<text class="bot-ask" x="300" y="450" font-size="180" text-anchor="middle">?</text>`:''}
+    </svg>`;
+  }
 
   function bottleEl(idx,pos=null){
     const el = document.createElement('div');
     el.className = 'bottle';
     el.dataset.idx = idx;
     if (pos!==null){ el.dataset.pos = pos; bindPointerDrag(el); }
-    el.innerHTML = bottleSVG(PALETTE[idx]);
+    el.innerHTML = bottleSVG(PALETTE[idx], { idx: `p${pos}` });
     return el;
   }
 
@@ -318,16 +417,16 @@
     for (let i=0;i<N;i++){
       const b = document.createElement('div');
       b.className = 'bottle';
-      b.innerHTML = bottleSVG('#9aa3ad', {gray:true, ask:true});
+      b.innerHTML = bottleSVG('#9aa3ad', {gray:true, ask:true, idx:i});
       secretRow.appendChild(b);
     }
   }
   function renderSecretReveal(){
     secretRow.innerHTML = '';
-    secret.forEach(idx=>{
+    secret.forEach((idx, i)=>{
       const b=document.createElement('div');
       b.className='bottle';
-      b.innerHTML = bottleSVG(PALETTE[idx]);
+      b.innerHTML = bottleSVG(PALETTE[idx], { idx: `s${i}` });
       secretRow.appendChild(b);
     });
   }
