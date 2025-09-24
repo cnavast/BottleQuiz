@@ -12,7 +12,15 @@
     --green: #16a34a;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
-  html,body{height:100%}
+  html,body{
+    height:100%;
+    /* Mitigar swipe-back y gestos nativos en iOS/webviews */
+    overscroll-behavior: none;
+    overscroll-behavior-x: none;
+    touch-action: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+  }
   body{
     margin:0; color:#e5e7eb; overflow-x:hidden; /* capamos cualquier scroll horizontal */
     background: radial-gradient(1200px 800px at 50% -240px,#0b1220,#060a14 70%,#03060d);
@@ -370,13 +378,16 @@
       dragging.proxyEl.style.top  = ev.clientY+'px';
       const tgt = elementBottleAtPoint(ev.clientX, ev.clientY);
       highlightTarget(tgt);
-    });
+      // Guard extra: evitar que el navegador interprete gesto
+      ev.preventDefault();
+    }, { passive:false });
     el.addEventListener('pointerup', ev=>{
       if (!dragging) return;
       el.releasePointerCapture(ev.pointerId);
       const tgt = elementBottleAtPoint(ev.clientX, ev.clientY);
       endDrag(tgt);
-    });
+      ev.preventDefault();
+    }, { passive:false });
     el.addEventListener('pointercancel', ()=> endDrag(null));
   }
   function elementBottleAtPoint(x,y){
@@ -509,6 +520,30 @@
   btnExit.onclick  = backToStart;
   btnNext.onclick  = nextLevel;
   btnAgain.onclick = startGame;
+
+  /* ===== Mitigaciones iOS/WebView para swipe-back ===== */
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (isTouch) {
+    // Evitar que el navegador se quede con el gesto horizontal
+    document.addEventListener('touchmove', e => {
+      if (e.touches.length > 1) return; // permitimos gestos multi-touch si los hubiera
+      e.preventDefault();
+    }, { passive: false });
+
+    // Durante drag con PointerEvents, bloqueamos cualquier gesto default
+    window.addEventListener('pointermove', e => {
+      if (dragging) e.preventDefault();
+    }, { passive: false });
+  }
+
+  // "Trampa" de historial: si el contenedor intenta navegar atrás con gesto,
+  // volvemos a insertar el estado actual para que no salga de la página.
+  try {
+    history.pushState(null, document.title, location.href);
+    window.addEventListener('popstate', () => {
+      history.pushState(null, document.title, location.href);
+    });
+  } catch (e) { /* ignorar si no está permitido */ }
 
   /* ===== Inicio ===== */
   setScreen('start');
