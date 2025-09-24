@@ -275,7 +275,7 @@
   const wrapEl     = document.getElementById('wrap');
 
   // Generate logos
-  startLogoContainer.innerHTML = bottleSVG(PALETTE[6], { idx: 'logo_start' });
+  startLogoContainer.innerHTML = bottleSVG(PALETTE[Math.floor(Math.random() * PALETTE.length)], { idx: 'logo_start' });
   endLogoContainer.innerHTML = bottleSVG(PALETTE[2], { idx: 'logo_end' });
 
   // Apply texts
