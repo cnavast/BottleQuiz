@@ -189,7 +189,10 @@
     <h1 id="endTitle" class="title">BottleQuiz</h1>
     <div class="final-time" id="finalTimeBlock"></div>
     <p class="final-note" id="finalNote"></p>
-    <button id="btnAgain" class="btn blue big"></button>
+    <div id="end-buttons" style="display:flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center;">
+      <button id="btnAgain" class="btn blue big"></button>
+      <button id="btnShare" class="btn green big" style="display: none;"></button>
+    </div>
   </div>
 </section>
 
@@ -210,7 +213,8 @@
       hits: (h,n)=>`Aciertos: ${h} de ${n}`,
       finalTime: t=>`Tu tiempo: ${t}`,
       finalNote: "¡Serie completada! ¿Repites para batir tu marca?",
-      again: "Jugar otra vez"
+      again: "Jugar otra vez",
+      share: "Compartir"
     },
     en: {
       subtitle: "Arrange the bottles to match the hidden pattern. Test your logic and speed!",
@@ -223,7 +227,8 @@
       hits: (h,n)=>`Matches: ${h} of ${n}`,
       finalTime: t=>`Your time: ${t}`,
       finalNote: "Series complete! Try again to beat your score?",
-      again: "Play again"
+      again: "Play again",
+      share: "Share"
     }
   };
   const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
@@ -259,6 +264,7 @@
   const finalTimeBlock = document.getElementById('finalTimeBlock');
   const finalNote    = document.getElementById('finalNote');
   const btnAgain     = document.getElementById('btnAgain');
+  const btnShare     = document.getElementById('btnShare');
 
   // Game nodes
   const levelEl    = document.getElementById('level');
@@ -281,6 +287,7 @@
   btnNext.textContent    = T.next;
   finalNote.textContent  = T.finalNote;
   btnAgain.textContent   = T.again;
+  btnShare.textContent   = T.share;
 
   /* ===== Utils ===== */
   const pad = n => String(n).padStart(2,'0');
@@ -600,8 +607,10 @@
       newLevel();
     } else {
       stopTimer();
+      const finalTime = timeEl.textContent;
       // poner el tiempo en la pantalla final con el texto correcto
-      finalTimeBlock.textContent = T.finalTime(timeEl.textContent);
+      finalTimeBlock.textContent = T.finalTime(finalTime);
+      setupShareButton(finalTime);
       setScreen('end');
     }
   }
@@ -615,6 +624,30 @@
   btnExit.onclick  = backToStart;
   btnNext.onclick  = nextLevel;
   btnAgain.onclick = startGame;
+
+  /* ===== Share ===== */
+  function setupShareButton(time) {
+    if (navigator.share) {
+      btnShare.style.display = 'inline-block';
+      btnShare.onclick = async () => {
+        try {
+          const shareText = lang === 'es' 
+            ? `¡He completado BottleQuiz en ${time}! ¿Puedes superar mi tiempo?`
+            : `I completed BottleQuiz in ${time}! Can you beat my time?`;
+          
+          await navigator.share({
+            title: 'BottleQuiz',
+            text: shareText,
+            url: 'https://bottlequiz.com',
+          });
+        } catch (err) {
+          console.error("Share failed:", err);
+        }
+      };
+    } else {
+      btnShare.style.display = 'none';
+    }
+  }
 
   /* ===== Mitigaciones iOS/WebView para swipe-back ===== */
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
