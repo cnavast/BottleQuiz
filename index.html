@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BottleQuiz</title>
+<style>
+  :root{
+    --gap: 14px;     /* lo ajusta JS según N */
+    --bsize: 120px;  /* lo ajusta JS para caber sin scroll */
+    --brand: #60a5fa;
+    --green: #16a34a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%}
+  body{
+    margin:0; color:#e5e7eb; overflow-x:hidden; /* capamos cualquier scroll horizontal */
+    background: radial-gradient(1200px 800px at 50% -240px,#0b1220,#060a14 70%,#03060d);
+    font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+  }
+
+  /* Pantallas */
+  .screen{display:none; min-height:100dvh; width:100%; padding:24px 16px 72px;}
+  .screen.show{display:flex}
+  /* Start + End centradas verticalmente */
+  #startScreen.show, #endScreen.show{
+    flex-direction:column; justify-content:center; align-items:center;
+  }
+
+  /* Marca / títulos */
+  .logo{width:84px; height:84px; filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));}
+  .title{
+    margin:0; font-weight:1000; font-size:clamp(2.1rem, 9vw, 3.2rem);
+    letter-spacing:.4px; line-height:1.02;
+    background: linear-gradient(180deg, #fff, var(--brand));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 6px 18px rgba(96,165,250,.12);
+  }
+  .subtitle{
+    margin:6px 0 24px; color:#cbd5e1;
+    font-size:clamp(1rem, 3.8vw, 1.25rem); text-align:center; max-width:720px;
+  }
+
+  /* Botones outline elegantes */
+  .btn{
+    height:58px; padding:0 24px; border-radius:16px; font-size:18px; font-weight:900;
+    cursor:pointer; background:transparent; transition:.2s transform ease, .25s box-shadow ease, .2s background ease;
+    border:2px solid currentColor;
+  }
+  .btn.big{height:66px; font-size:20px; padding:0 28px;}
+  .btn.blue{color:#60a5fa;}
+  .btn.blue:active{background:rgba(96,165,250,.12);}
+  .btn.green{color:var(--green);}
+  .btn.green:disabled{opacity:.45; cursor:not-allowed;}
+  .btn.green:not(:disabled):active{background:rgba(22,163,74,.15);}
+
+  /* Juego */
+  #gameScreen{flex-direction:column; gap:14px; padding-top:10px;}
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    width:100%; max-width:880px; margin:0 auto;
+  }
+  .pill{
+    background:rgba(17,24,39,.72); border:1px solid rgba(255,255,255,.08);
+    border-radius:999px; padding:10px 14px; font-size:15px; font-weight:700; color:#fff;
+    backdrop-filter: blur(6px);
+  }
+  .pill b{font-variant-numeric: tabular-nums; color:#fff}
+
+  .arena{
+    flex:1; display:flex; flex-direction:column; gap:22px; align-items:center; justify-content:center; width:100%;
+  }
+  .wrap{
+    width:100%; max-width:none; /* sin tope para medir W real exacto en móviles */
+    display:flex; flex-direction:column; gap:18px;
+  }
+  .row-bottles{
+    display:flex; align-items:center; justify-content:flex-start; /* solo usamos gap, no space-between */
+    gap:var(--gap); width:100%;
+  }
+
+  /* Botellas */
+  .bottle{width:var(--bsize); height:var(--bsize); position:relative; touch-action:none; flex:0 0 auto;}
+  .bottle.drag-origin{opacity:.45}
+  .drop-highlight{outline:3px solid rgba(96,165,250,.8); border-radius:16px}
+  .bot-svg{width:100%; height:100%; display:block; filter: drop-shadow(0 14px 22px rgba(0,0,0,.5));}
+  .bot-glass{fill:url(#glassGrad); stroke:#ffffff; stroke-opacity:.28; stroke-width:1.4}
+  .bot-ask{font-weight:900; font-size:46px; fill:#94a3b8; paint-order:stroke; stroke:#000; stroke-width:6; stroke-opacity:.22}
+  .drag-proxy{position:fixed; z-index:9999; width:var(--bsize); height:var(--bsize); pointer-events:none; transform:translate(-50%,-50%) scale(1.04)}
+
+  /* Aciertos grande */
+  .status{
+    min-height:40px; text-align:center;
+    font-size:clamp(22px, 6vw, 34px);
+    font-weight:1000; color:#facc15;
+    text-shadow: 0 6px 18px rgba(250,204,21,.18);
+  }
+
+  /* Botón siguiente/terminar más abajo */
+  .nextWrap{margin-top:34px; text-align:center;}
+
+  /* Footer de marca */
+  .brand-footer{
+    position:fixed; left:0; right:0; bottom:8px;
+    text-align:center; font-weight:900; letter-spacing:.2px;
+    color:#cbd5e1; opacity:.7; pointer-events:none; user-select:none; font-size:14px;
+  }
+
+  /* Fin */
+  .final-time{
+    font-size:clamp(1.8rem, 8vw, 3rem);
+    font-weight:1000; color:#22c55e;
+    text-shadow: 0 8px 26px rgba(34,197,94,.18);
+    margin:10px 0 18px;
+  }
+  .final-note{
+    color:#cbd5e1; opacity:.9; font-size:clamp(.95rem, 3.6vw, 1.1rem); margin-bottom:24px;
+  }
+</style>
+</head>
+<body>
+
+<!-- INICIO -->
+<section id="startScreen" class="screen show" aria-labelledby="homeTitle">
+  <div style="display:flex; flex-direction:column; align-items:center; max-width:980px; margin:0 auto;">
+    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#93c5fd"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
+      <path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z" fill="url(#g1)" opacity=".9"/>
+    </svg>
+    <h1 id="homeTitle" class="title">BottleQuiz</h1>
+    <p class="subtitle" id="homeSubtitle"></p>
+    <button id="btnStart" class="btn blue big" aria-label="Start"></button>
+  </div>
+</section>
+
+<!-- JUEGO -->
+<section id="gameScreen" class="screen" aria-label="Juego BottleQuiz">
+  <div class="topbar">
+    <div class="pill"><span id="labelLevel"></span> <b id="level">1/4</b></div>
+    <div class="pill"><span id="labelTime"></span> <b id="time">00:00</b></div>
+    <button id="btnExit" class="pill" aria-label="Exit"></button>
+  </div>
+
+  <div class="arena">
+    <div class="wrap" id="wrap">
+      <!-- Misteriosas ARRIBA -->
+      <div id="secretRow" class="row-bottles"></div>
+      <!-- Jugador ABAJO -->
+      <div id="playerRow" class="row-bottles"></div>
+      <div id="status" class="status" aria-live="polite"></div>
+      <div class="nextWrap">
+        <button id="btnNext" class="btn green big" disabled></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIN -->
+<section id="endScreen" class="screen" aria-labelledby="endTitle">
+  <div style="display:flex; flex-direction:column; align-items:center; max-width:980px; margin:0 auto;">
+    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs>
+      <path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z" fill="url(#g2)" opacity=".95"/>
+    </svg>
+    <h1 id="endTitle" class="title">BottleQuiz</h1>
+    <div class="final-time" id="finalTimeBlock"></div>
+    <p class="final-note" id="finalNote"></p>
+    <button id="btnAgain" class="btn blue big"></button>
+  </div>
+</section>
+
+<footer class="brand-footer">BottleQuiz</footer>
+
+<script>
+(() => {
+  /* ===== I18N ===== */
+  const i18n = {
+    es: {
+      subtitle: "Ordena tus botellas para igualar el patrón oculto. ¡Pon a prueba tu lógica y rapidez!",
+      start: "Empezar juego",
+      exit: "Salir",
+      level: "Nivel:",
+      time: "Tiempo:",
+      next: "Siguiente nivel",
+      finish: "Terminar",
+      hits: (h,n)=>`Aciertos: ${h} de ${n}`,
+      finalTime: t=>`Tu tiempo: ${t}`,
+      finalNote: "¡Serie completada! ¿Repites para batir tu marca?",
+      again: "Jugar otra vez"
+    },
+    en: {
+      subtitle: "Arrange the bottles to match the hidden pattern. Test your logic and speed!",
+      start: "Start Game",
+      exit: "Exit",
+      level: "Level:",
+      time: "Time:",
+      next: "Next level",
+      finish: "Finish",
+      hits: (h,n)=>`Matches: ${h} of ${n}`,
+      finalTime: t=>`Your time: ${t}`,
+      finalNote: "Series complete! Try again to beat your score?",
+      again: "Play again"
+    }
+  };
+  const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+  document.documentElement.lang = lang;
+  const T = i18n[lang];
+
+  /* ===== Config / Estado ===== */
+  const LEVEL_SIZES = [3,4,5,6];
+  const PALETTE = ["#ef4444","#3b82f6","#22c55e","#eab308","#8b5cf6","#06b6d4","#ec4899","#6b7280"];
+
+  let levelIndex = 0, N = LEVEL_SIZES[0];
+  let secret = [], player = [];
+  let startMs = 0, timerId = null;
+  let dragging = null;
+  let currentGap = 14;
+
+  /* ===== DOM ===== */
+  const startScreen = document.getElementById('startScreen');
+  const gameScreen  = document.getElementById('gameScreen');
+  const endScreen   = document.getElementById('endScreen');
+
+  // Text nodes
+  const homeSubtitle = document.getElementById('homeSubtitle');
+  const btnStart     = document.getElementById('btnStart');
+  const btnExit      = document.getElementById('btnExit');
+  const labelLevel   = document.getElementById('labelLevel');
+  const labelTime    = document.getElementById('labelTime');
+  const btnNext      = document.getElementById('btnNext');
+  const finalTimeBlock = document.getElementById('finalTimeBlock');
+  const finalNote    = document.getElementById('finalNote');
+  const btnAgain     = document.getElementById('btnAgain');
+
+  // Game nodes
+  const levelEl    = document.getElementById('level');
+  const timeEl     = document.getElementById('time');
+  const secretRow  = document.getElementById('secretRow');
+  const playerRow  = document.getElementById('playerRow');
+  const statusEl   = document.getElementById('status');
+  const wrapEl     = document.getElementById('wrap');
+
+  // Apply texts
+  homeSubtitle.textContent = T.subtitle;
+  btnStart.textContent = T.start;
+  btnExit.textContent  = T.exit;
+  labelLevel.textContent = T.level;
+  labelTime.textContent  = T.time;
+  btnNext.textContent    = T.next;
+  finalNote.textContent  = T.finalNote;
+  btnAgain.textContent   = T.again;
+
+  /* ===== Utils ===== */
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = ms => { const s=Math.floor(ms/1000), m=Math.floor(s/60); return `${pad(m)}:${pad(s%60)}`; };
+  const shuffle = a => { const arr=[...a]; for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
+
+  function setScreen(scr){
+    startScreen.classList.toggle('show', scr==='start');
+    gameScreen .classList.toggle('show', scr==='game');
+    endScreen  .classList.toggle('show',  scr==='end');
+  }
+  function startTimer(){ startMs = Date.now(); timerId = setInterval(()=> timeEl.textContent = fmt(Date.now()-startMs), 200); }
+  function stopTimer(){ if (timerId){ clearInterval(timerId); timerId=null; } }
+
+  /* ===== Layout (gap + tamaño + padding dinámico) ===== */
+  function sidePaddingForN(n){
+    // Lateral más estrecho para 5–6 botellas
+    return (n >= 5) ? 6 : 16;
+  }
+  function gapForN(n){
+    switch(n){
+      case 3: return 18;
+      case 4: return 14;
+      case 5: return 9;
+      case 6: return 5;
+      default: return 10;
+    }
+  }
+  function containerWidth(){
+    const rect = wrapEl?.getBoundingClientRect?.();
+    const w = rect?.width || document.documentElement.clientWidth || window.innerWidth;
+    return Math.max(0, Math.floor(w));
+  }
+  function computeBottleSize(n){
+    const W = containerWidth();
+    // Pequeño ajuste (-2px) para evitar desbordes por redondeo
+    const size = Math.floor((W - currentGap*(n-1) - 2) / n);
+    return Math.max(64, size);
+  }
+  function applyLayout(){
+    const sp = sidePaddingForN(N);
+    gameScreen.style.paddingLeft  = sp + 'px';
+    gameScreen.style.paddingRight = sp + 'px';
+
+    currentGap = gapForN(N);
+    document.documentElement.style.setProperty('--gap', currentGap +'px');
+    document.documentElement.style.setProperty('--bsize', computeBottleSize(N) +'px');
+  }
+  let resizeDebounce;
+  function onResize(){ clearTimeout(resizeDebounce); resizeDebounce = setTimeout(applyLayout, 60); }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', ()=> setTimeout(applyLayout, 200));
+
+  /* ===== Botellas (SVG) ===== */
+  function defsGlass(){return `<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0.22"/><stop offset="55%" stop-color="#dbeafe" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>`;}
+  function bottleSVG(fill,{gray=false,ask=false}={}){ const liquid = gray ? '#9aa3ad' : fill; return `
+    <svg class="bot-svg" viewBox="0 0 100 100" aria-hidden="true">
+      ${defsGlass()}
+      <path class="bot-glass" d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z"/>
+      <clipPath id="clipBottle"><path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z"/></clipPath>
+      <g clip-path="url(#clipBottle)">
+        <rect x="20" y="32" width="60" height="60" rx="10" fill="${liquid}"/>
+        <ellipse cx="50" cy="32" rx="22" ry="3" fill="rgba(255,255,255,.18)"/>
+      </g>
+      ${ask?`<text class="bot-ask" x="50" y="67" text-anchor="middle">?</text>`:''}
+    </svg>`;}
+
+  function bottleEl(idx,pos=null){
+    const el = document.createElement('div');
+    el.className = 'bottle';
+    el.dataset.idx = idx;
+    if (pos!==null){ el.dataset.pos = pos; bindPointerDrag(el); }
+    el.innerHTML = bottleSVG(PALETTE[idx]);
+    return el;
+  }
+
+  function renderSecretHidden(){
+    secretRow.innerHTML = '';
+    for (let i=0;i<N;i++){
+      const b = document.createElement('div');
+      b.className = 'bottle';
+      b.innerHTML = bottleSVG('#9aa3ad', {gray:true, ask:true});
+      secretRow.appendChild(b);
+    }
+  }
+  function renderSecretReveal(){
+    secretRow.innerHTML = '';
+    secret.forEach(idx=>{
+      const b=document.createElement('div');
+      b.className='bottle';
+      b.innerHTML = bottleSVG(PALETTE[idx]);
+      secretRow.appendChild(b);
+    });
+  }
+  function renderPlayer(){
+    playerRow.innerHTML = '';
+    player.forEach((idx,i)=> playerRow.appendChild(bottleEl(idx,i)));
+  }
+
+  /* ===== Drag + swap (FLIP con 500ms en la botella destino) ===== */
+  function bindPointerDrag(el){
+    el.addEventListener('pointerdown', ev=>{
+      ev.preventDefault();
+      el.setPointerCapture(ev.pointerId);
+      const originPos = +el.dataset.pos;
+      const proxy = el.cloneNode(true);
+      proxy.classList.add('drag-proxy');
+      proxy.style.left = ev.clientX+'px';
+      proxy.style.top  = ev.clientY+'px';
+      document.body.appendChild(proxy);
+      el.classList.add('drag-origin');
+      dragging = { originEl: el, originPos, proxyEl: proxy };
+    });
+    el.addEventListener('pointermove', ev=>{
+      if (!dragging) return;
+      dragging.proxyEl.style.left = ev.clientX+'px';
+      dragging.proxyEl.style.top  = ev.clientY+'px';
+      const tgt = elementBottleAtPoint(ev.clientX, ev.clientY);
+      highlightTarget(tgt);
+    });
+    el.addEventListener('pointerup', ev=>{
+      if (!dragging) return;
+      el.releasePointerCapture(ev.pointerId);
+      const tgt = elementBottleAtPoint(ev.clientX, ev.clientY);
+      endDrag(tgt);
+    });
+    el.addEventListener('pointercancel', ()=> endDrag(null));
+  }
+  function elementBottleAtPoint(x,y){
+    const e = document.elementFromPoint(x,y);
+    if (!e) return null;
+    const b = e.closest('.bottle');
+    if (b && b.parentElement === playerRow) return b;
+    return null;
+  }
+  function highlightTarget(el){
+    [...playerRow.children].forEach(c => c.classList.remove('drop-highlight'));
+    if (el && el !== dragging?.originEl) el.classList.add('drop-highlight');
+  }
+  function endDrag(targetEl){
+    [...playerRow.children].forEach(c => c.classList.remove('drop-highlight'));
+    if (dragging){
+      dragging.originEl.classList.remove('drag-origin');
+      dragging.proxyEl.remove();
+      if (targetEl && targetEl !== dragging.originEl){
+        const from = +dragging.originPos;
+        const to   = +targetEl.dataset.pos;
+        animateSwap(from, to);
+        updateHits(); // comprobación automática tras cada swap
+      }
+      dragging = null;
+    }
+  }
+  function setTransition(el, ms){ el.style.transition = `transform ${ms}ms cubic-bezier(.2,.7,.2,1)`; }
+  function clearTransition(el){ el.style.transition = ''; }
+  function animateSwap(from,to){
+    if (from === to) return;
+    const kids = [...playerRow.children];
+    const elDst = kids.find(e => +e.dataset.pos === to);
+    if (!elDst) return;
+
+    // BEFORE
+    const before = new Map(); kids.forEach(el => before.set(el, el.getBoundingClientRect()));
+
+    // Estado + reordenar DOM reutilizando nodos
+    const next = [...player]; [next[from], next[to]] = [next[to], next[from]]; player = next;
+    const byIdx = new Map(kids.map(el => [+el.dataset.idx, el]));
+    const frag = document.createDocumentFragment();
+    player.forEach((idx,i)=>{ const el = byIdx.get(idx); el.dataset.pos = i; frag.appendChild(el); });
+    playerRow.appendChild(frag);
+
+    // AFTER
+    const after = new Map(); [...playerRow.children].forEach(el => after.set(el, el.getBoundingClientRect()));
+
+    // Inverso sin transición
+    [...playerRow.children].forEach(el => {
+      const a = after.get(el), b = before.get(el)||a;
+      el.style.transform = `translate3d(${b.left-a.left}px, ${b.top-a.top}px, 0)`;
+      clearTransition(el);
+    });
+
+    // Animar (destino 500ms)
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+      [...playerRow.children].forEach(el => { setTransition(el, (el===elDst)?500:220); el.style.transform='translate3d(0,0,0)'; });
+      setTimeout(()=>{ [...playerRow.children].forEach(el => { clearTransition(el); el.style.transform=''; }); }, 520);
+    })});
+  }
+
+  /* ===== Derangement ===== */
+  function derangedFrom(secretArr){
+    const n = secretArr.length;
+    let arr = [...secretArr], guard=0;
+    do { arr = shuffle(arr); guard++; if (guard>1000) break; }
+    while (arr.some((v,i)=> v === secretArr[i]));
+    return arr;
+  }
+
+  /* ===== Niveles / Juego ===== */
+  function newLevel(){
+    N = LEVEL_SIZES[levelIndex];
+    levelEl.textContent = `${levelIndex+1}/${LEVEL_SIZES.length}`;
+
+    // layout dinámico (padding lateral + gap + bsize)
+    applyLayout();
+
+    const base = Array.from({length:N}, (_,i)=>i);
+    secret = shuffle(base);
+    player = derangedFrom(secret);
+
+    renderSecretHidden();
+    renderPlayer();
+
+    statusEl.textContent = T.hits(0, N);
+    btnNext.disabled = true;
+    btnNext.textContent = (levelIndex === LEVEL_SIZES.length - 1) ? T.finish : T.next;
+  }
+  function countHits(){ return player.reduce((a,v,i)=> a + (v===secret[i]), 0); }
+  function updateHits(){
+    const hits = countHits();
+    statusEl.textContent = T.hits(hits, N);
+    if (hits === N){
+      renderSecretReveal();
+      btnNext.disabled = false;
+      btnNext.textContent = (levelIndex === LEVEL_SIZES.length - 1) ? T.finish : T.next;
+      // micro pop
+      btnNext.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}], {duration:220, easing:'ease-out'});
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
+  }
+
+  function startGame(){
+    levelIndex = 0;
+    setScreen('game');
+    timeEl.textContent = '00:00';
+    stopTimer(); startTimer();
+    newLevel();
+  }
+  function nextLevel(){
+    if (levelIndex < LEVEL_SIZES.length - 1){
+      levelIndex++;
+      newLevel();
+    } else {
+      stopTimer();
+      // poner el tiempo en la pantalla final con el texto correcto
+      finalTimeBlock.textContent = T.finalTime(timeEl.textContent);
+      setScreen('end');
+    }
+  }
+  function backToStart(){
+    stopTimer();
+    setScreen('start');
+  }
+
+  /* ===== Eventos ===== */
+  btnStart.onclick = startGame;
+  btnExit.onclick  = backToStart;
+  btnNext.onclick  = nextLevel;
+  btnAgain.onclick = startGame;
+
+  /* ===== Inicio ===== */
+  setScreen('start');
+})();
+</script>
+</body>
+</html>
