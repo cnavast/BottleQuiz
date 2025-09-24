@@ -36,13 +36,13 @@
   }
 
   /* Marca / títulos */
-  .logo{width:84px; height:84px; filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));}
+  .logo{width:168px; height:168px; filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));}
   .title{
     margin:0; font-weight:1000; font-size:clamp(2.1rem, 9vw, 3.2rem);
     letter-spacing:.4px; line-height:1.02;
-    background: linear-gradient(180deg, #fff, var(--brand));
+    background: linear-gradient(180deg, #ec4899, #8b5cf6);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    text-shadow: 0 6px 18px rgba(96,165,250,.12);
+    text-shadow: 0 6px 18px rgba(139, 92, 246, .18);
   }
   .subtitle{
     margin:6px 0 24px; color:#cbd5e1;
@@ -135,11 +135,7 @@
 <!-- INICIO -->
 <section id="startScreen" class="screen show" aria-labelledby="homeTitle">
   <div style="display:flex; flex-direction:column; align-items:center; max-width:980px; margin:0 auto;">
-    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
-      <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#93c5fd"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
-      <path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z" fill="url(#g1)" opacity=".9"/>
-    </svg>
+    <div id="startLogoContainer" class="logo"></div>
     <h1 id="homeTitle" class="title">BottleQuiz</h1>
     <p class="subtitle" id="homeSubtitle"></p>
     <button id="btnStart" class="btn blue big" aria-label="Start"></button>
@@ -171,11 +167,7 @@
 <!-- FIN -->
 <section id="endScreen" class="screen" aria-labelledby="endTitle">
   <div style="display:flex; flex-direction:column; align-items:center; max-width:980px; margin:0 auto;">
-    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
-      <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs>
-      <path d="M45 8 h10 v10 c0 4 2 8 5 12 8 10 12 22 12 35 0 16-13 27-22 27s-22-11-22-27c0-13 4-25 12-35 3-4 5-8 5-12V8z" fill="url(#g2)" opacity=".95"/>
-    </svg>
+    <div id="endLogoContainer" class="logo"></div>
     <h1 id="endTitle" class="title">BottleQuiz</h1>
     <div class="final-time" id="finalTimeBlock"></div>
     <p class="final-note" id="finalNote"></p>
@@ -235,6 +227,10 @@
   const gameScreen  = document.getElementById('gameScreen');
   const endScreen   = document.getElementById('endScreen');
 
+  // Logo containers
+  const startLogoContainer = document.getElementById('startLogoContainer');
+  const endLogoContainer = document.getElementById('endLogoContainer');
+
   // Text nodes
   const homeSubtitle = document.getElementById('homeSubtitle');
   const btnStart     = document.getElementById('btnStart');
@@ -253,6 +249,10 @@
   const playerRow  = document.getElementById('playerRow');
   const statusEl   = document.getElementById('status');
   const wrapEl     = document.getElementById('wrap');
+
+  // Generate logos
+  startLogoContainer.innerHTML = bottleSVG(PALETTE[3], { idx: 'logo_start' });
+  endLogoContainer.innerHTML = bottleSVG(PALETTE[2], { idx: 'logo_end' });
 
   // Apply texts
   homeSubtitle.textContent = T.subtitle;
