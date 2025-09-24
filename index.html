@@ -90,7 +90,7 @@
 
   /* Botellas */
   .bottle{
-    height:auto; aspect-ratio:1; position:relative; touch-action:none;
+    height:auto; aspect-ratio:2/3; position:relative; touch-action:none;
     flex: 1 0 64px; /* Crecer, no encoger, base de 64px */
   }
   .bottle.drag-origin{opacity:.45}
@@ -307,9 +307,9 @@
     };
     return {
       main: hex,
-      darkest: p(hex, -40),
-      dark: p(hex, -20),
-      light: p(hex, 20),
+      darkest: p(hex, -80),
+      dark: p(hex, -25),
+      light: p(hex, 25),
       lightest: p(hex, 60)
     };
   }
@@ -319,7 +319,7 @@
     const gradId = (base) => `${base}_${idx}`; // IDs únicos por botella para evitar conflictos
 
     return `
-    <svg class="bot-svg" viewBox="0 0 600 600" aria-hidden="true" xml:space="preserve">
+    <svg class="bot-svg" viewBox="120 0 400 600" aria-hidden="true" xml:space="preserve">
       <g id="objects_${idx}">
         <g>
           <g>
@@ -332,8 +332,8 @@
             <path style="fill:#666666;" d="M275.216,223.046c-5.142-1.274-10.432,1.507-12.264,6.478 c-3.724,10.104-11.162,19.19-20.521,22.74c-17.156,6.507-31.132,15.841-39.607,22.304c-4.731,3.608-4.834,10.688-0.188,14.404h0 c3.411,2.729,8.269,2.662,11.601-0.162c6.941-5.883,20.075-15.457,37.108-20.698c15.92-4.899,26.425-17.706,31.249-31.633 C284.588,230.727,281.126,224.511,275.216,223.046L275.216,223.046z"/>
             
             <linearGradient id="${gradId('SVGID_00000041268535452084548570000003881654123983600008')}" gradientUnits="userSpaceOnUse" x1="323.0786" y1="395.1245" x2="187.4762" y2="364.4055">
-              <stop offset="0" style="stop-color:${shades.dark}"/>
-              <stop offset="0.9976" style="stop-color:${shades.main}"/>
+              <stop offset="0" style="stop-color:${shades.main}"/>
+              <stop offset="0.9976" style="stop-color:${shades.dark}"/>
             </linearGradient>
             <path style="fill:url(#${gradId('SVGID_00000041268535452084548570000003881654123983600008')});" d="M330.796,374.726 C314,396,289.612,414.266,253.445,415c-67.048,1.361-92.071-39.526-93.11-58.576c-0.081-1.491-0.64-2.911-0.269-4.357l0,0 c0.405-1.579,1.329-2.987,2.653-3.938c12.741-9.151,59.879-27.336,117.47,2.389C300.257,360.874,313.897,376.41,330.796,374.726z"/>
             
